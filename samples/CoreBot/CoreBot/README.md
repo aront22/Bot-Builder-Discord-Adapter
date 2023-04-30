@@ -1,96 +1,66 @@
-# CoreBotWithTests
+# CoreBot with Discord Adapter
 
-Bot Framework v4 core bot sample.
+You should already be familiar with all [Bot Framework](https://dev.botframework.com/) configuration, setup and concepts, this document will only describe the Discord adapter related code and concepts.
 
-This bot has been created using [Bot Framework](https://dev.botframework.com), it shows how to:
+## Important concepts of Discord and the adapter
 
-- Use [LUIS](https://www.luis.ai) to implement core AI capabilities
-- Implement a multi-turn conversation using Dialogs
-- Handle user interruptions for such things as `Help` or `Cancel`
-- Prompt for and validate requests for information from the user
+Discord uses a websocket connection to send events to bot accounts. Not like other adapters, the Discord adapter does not implement the `IBotFrameworkHttpAdapter`, rather it uses a `DiscordSocketClient` internally to communicate with the Discord channel through the Discord API. When using the adapter your bot needs to send activities with the `TurnContext`'s functions and the adapter will handle sending the appropriate action to Discord.
 
-## Prerequisites
+## Using the adapter
+### Startup config
 
-This sample **requires** prerequisites in order to run.
+When using the Discord adapter the easiest way to set it up is to use the extension function on the host builder:
 
-### Overview
-
-This bot uses [LUIS](https://www.luis.ai), an AI based cognitive service, to implement language understanding.
-
-### Install .NET CLI
-
-- [.NET SDK](https://dotnet.microsoft.com/download) version 6.0
-
-  ```bash
-  # determine dotnet version
-  dotnet --version
-  ```
-
-### Create a LUIS Application to enable language understanding
-
-The LUIS model for this example can be found under `CognitiveModels/FlightBooking.json` and the LUIS language model setup, training, and application configuration steps can be found [here](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-howto-v4-luis?view=azure-bot-service-4.0&tabs=cs).
-
-Once you created the LUIS model, update `appsettings.json` with your `LuisAppId`, `LuisAPIKey` and `LuisAPIHostName`.
-
-```json
-  "LuisAppId": "Your LUIS App Id",
-  "LuisAPIKey": "Your LUIS Subscription key here",
-  "LuisAPIHostName": "Your LUIS App region here (i.e: westus.api.cognitive.microsoft.com)"
+```csharp
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+...
+// other Program.cs setup stuff
+...
+// Add and configure all Discord Adapter related classes with the default options
+builder.Host.AddDefaultDiscord();
 ```
 
-## To try this sample
+This will add a `DiscordSocketClient` to the DI and a default `IDiscordBot` implementation with minimal setup and logging. This will be more then enough in most cases if your goal is to have conversation on Discord with your chatbot.
 
-- In a terminal, navigate to `CoreBotWithTests`
+The Discord bot needs a token to connect to the Discord API, you need to have a `Token` key defined under the `DiscordBotOptions` key like this in the `appsettings.json` :
+```json
+"DiscordBotOptions": {
+    "Token": "your discord bot token"
+  }
+```
 
-    ```bash
-    # change into project folder
-    cd CoreBotWithTests
-    ```
+or an Environment variable under this key:
+```
+DiscordBotOptions__Token
+```
 
-- Run the bot from a terminal or from Visual Studio, choose option A or B.
+or any other way you like, but it has to be available in the `IConfiguration`.
 
-  A) From a terminal
+The adapter is expecting to have an `IBot` implementation already registered in the DI container. 
 
-  ```bash
-  # run the bot
-  dotnet run
-  ```
+The adapter will start new conversations when a user sends a message to the bot for the first time. This can be disabled in the `DiscordAdapterOptions` by setting the `StartConversationOnMessageReceived` property to `false`. This way you will have to use the `StartDiscordConversationAsync` function on the adapter to start a conversations manually.
 
-  B) Or from Visual Studio
+ > This function need an `IUser` parameter which you can obtain using the Discord.Net library. The easiest way is to get the `DiscordSocketClient` from the DI container and use the `GetUserAsync(ulong discordId)` function to get the user's object. This method only recommended when custom logic is needed to perform checks to start the conversation.
 
-  - Launch Visual Studio
-  - File -> Open -> Project/Solution
-  - Navigate to `CoreBotWithTests` folder
-  - Select `CoreBotWithTests.csproj` file
-  - Press `F5` to run the project
+You can pass a `DiscordAdapterOptions` instance to any of the host builder extension functions when adding the discord adapter.
 
-## Testing the bot using Bot Framework Emulator
+The `DiscordBot` is a hosted service and it takes time to initialize and connect to the Discord Gateway, sending any `Activity` from your `IBot` implementation to the `DiscordAdapter` will throw an `ApplicationException` as the bot cannot send API requests before connecting to the Discord API.
 
-[Bot Framework Emulator](https://github.com/microsoft/botframework-emulator) is a desktop application that allows bot developers to test and debug their bots on localhost or running remotely through a tunnel.
+### More control over setup
 
-- Install the Bot Framework Emulator version 4.5.0 or greater from [here](https://github.com/Microsoft/BotFramework-Emulator/releases)
+The adapter uses the following DiscordSocketClient events to handle it's functionality:
+```csharp
+ButtonExecuted // User clicked a button
+MessageReceived // User has sent a message to the bot
+ReactionAdded // User added a reaction to a message
+ReactionRemoved // User have removed a reaction from a message
+MessageDeleted // User has deleted a message 
+MessageUpdated // User has edited a message
+UserIsTyping // User has started typing
+```
 
-### Connect to the bot using Bot Framework Emulator
+You can create a custom implementation of the `DiscordBot` class by inheriting from it and you can override functions like `CheckMessageReceivedPreconditions` veto the handling of these events. You can perform any custom logic in these functions and by returning `false` you can prevent the adapter from handling the event and sending the related `Activity` to your `IBot` implementation.
+If you are using a custom `IDiscordBot` implementation make sure to register the adapter with the `AddDiscord<YourDiscordBot>()` extension method on the host builder.
 
-- Launch Bot Framework Emulator
-- File -> Open Bot
-- Enter a Bot URL of `http://localhost:3978/api/messages`
-
-## Deploy the bot to Azure
-
-To learn more about deploying a bot to Azure, see [Deploy your bot to Azure](https://aka.ms/azuredeployment) for a complete list of deployment instructions.
-
-## Further reading
-
-- [Bot Framework Documentation](https://docs.botframework.com)
-- [Bot Basics](https://docs.microsoft.com/azure/bot-service/bot-builder-basics?view=azure-bot-service-4.0)
-- [Dialogs](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-concept-dialog?view=azure-bot-service-4.0)
-- [Gathering Input Using Prompts](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-prompts?view=azure-bot-service-4.0&tabs=csharp)
-- [Activity processing](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-concept-activity-processing?view=azure-bot-service-4.0)
-- [Azure Bot Service Introduction](https://docs.microsoft.com/azure/bot-service/bot-service-overview-introduction?view=azure-bot-service-4.0)
-- [Azure Bot Service Documentation](https://docs.microsoft.com/azure/bot-service/?view=azure-bot-service-4.0)
-- [.NET Core CLI tools](https://docs.microsoft.com/en-us/dotnet/core/tools/?tabs=netcore2x)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/?view=azure-cli-latest)
-- [Azure Portal](https://portal.azure.com)
-- [Language Understanding using LUIS](https://docs.microsoft.com/en-us/azure/cognitive-services/luis/)
-- [Channels and Bot Connector Service](https://docs.microsoft.com/en-us/azure/bot-service/bot-concepts?view=azure-bot-service-4.0)
+You can provide a custom function in the `DiscordAdapterOptions` for resolving an `IBot` to handle activities, by default it will get the first from the DI container. This can be useful if you want to handle different activities by different bots for some reason. 
+> My recommendation is to have one DiscordBot and one chat bot in a single ASP .NET application, and create more apps if you want to use multiple bots. 
