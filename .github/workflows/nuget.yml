@@ -27,7 +27,7 @@ jobs:
           run: dotnet restore ${{ env.PROJECT_PATH }}
 
         - name: 'Build Project'
-          run: dotnet restore ${{ env.PROJECT_PATH }} --no-restore --configuration Release
+          run: dotnet build ${{ env.PROJECT_PATH }} --no-restore --configuration Release
 
         - name: 'Pack Project'
           run: dotnet pack ${{ env.PROJECT_PATH }} --no-restore --no-build --configuration Release --include-symbols --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
