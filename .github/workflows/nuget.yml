@@ -34,7 +34,7 @@ jobs:
         runs-on: ubuntu-20.04
 
         needs: check
-        if: ${{ needs.check.outputs.branch == 'nuget' }}
+        if: ${{ needs.check.outputs.branch == 'main' }}
 
         steps:
         - name: 'Checkout'
