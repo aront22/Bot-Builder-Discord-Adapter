@@ -2,8 +2,6 @@ name: Deploy to Nuget
 
 on:
     push:
-      branches:
-        - nuget
       tags:
         - 'v[0-9]+.[0-9]+.[0-9]+'
 
@@ -17,6 +15,10 @@ jobs:
         name: 'Deploy'
         runs-on: ubuntu-20.04
         steps:
+        - name: Exit if not on master branch
+          if: endsWith(github.ref, 'main') == false
+          run: exit -1
+
         - name: 'Checkout'
           uses: actions/checkout@v2
 
