@@ -4,10 +4,25 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Bot Framework Discord Adapter</Title>
+    <Authors>aront</Authors>
+    <Description>Discord channel adapter for Microsoft Bot Framework</Description>
+    <PackageProjectUrl>https://github.com/aront22/Bot-Builder-Discord-Adapter</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/aront22/Bot-Builder-Discord-Adapter</RepositoryUrl>
+    <PackageTags>Microsoft Bot Framework, Discord, Discord.Net</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.9.0" />
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="3.10.0" />
 	<PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.19.3" />
   </ItemGroup>
 

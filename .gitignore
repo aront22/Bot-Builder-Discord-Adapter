@@ -400,3 +400,4 @@ FodyWeavers.xsd
 # Secrets and stuff
 *launchSettings.json
 *profile.arm.json
+*nuget.config
