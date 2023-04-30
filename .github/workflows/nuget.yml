@@ -11,14 +11,32 @@ env:
     NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
 
 jobs:
+    check:
+        runs-on: ubuntu-latest
+        outputs:
+            branch: ${{ steps.check_step.outputs.branch }}
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+          with:
+            fetch-depth: 0
+
+        - name: Get current branch
+          id: check_step
+          run: |
+            raw=$(git branch -r --contains ${{ github.ref }})
+            branch=${raw##*/}
+            echo "::set-output name=branch::$branch"
+            echo "Branch is $branch."
+
     deploy:
         name: 'Deploy'
         runs-on: ubuntu-20.04
-        steps:
-        - name: Exit if not on master branch
-          if: endsWith(github.event.base_ref, 'nuget') == false
-          run: exit -1
 
+        needs: check
+        if: ${{ needs.check.outputs.branch == 'nuget' }}
+
+        steps:
         - name: 'Checkout'
           uses: actions/checkout@v2
 
