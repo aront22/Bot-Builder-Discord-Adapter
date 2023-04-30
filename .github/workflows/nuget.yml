@@ -7,7 +7,7 @@ on:
 
 env:
     PROJECT_PATH: 'src/DiscordAdapter/DiscordAdapter.csproj'
-    PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}\output
+    PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}/output
     NUGET_SOURCE_URL: 'https://api.nuget.org/v3/index.json'
 
 jobs:
@@ -33,4 +33,4 @@ jobs:
           run: dotnet pack ${{ env.PROJECT_PATH }} --no-restore --no-build --configuration Release --include-symbols --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
 
         - name: 'Push package'
-          run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}\*.nupkg -k ${{ secrets.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
+          run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ secrets.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
