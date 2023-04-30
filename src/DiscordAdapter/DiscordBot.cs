@@ -19,8 +19,8 @@ namespace DiscordAdapter
     {
         #region dependecies
         private readonly DiscordSocketClient client;
-        private readonly DiscordBotOptions options;
-        private readonly ILogger logger;
+        protected readonly DiscordBotOptions options;
+        protected readonly ILogger logger;
         #endregion
 
         #region private vars
@@ -54,7 +54,7 @@ namespace DiscordAdapter
             _ => LogLevel.Information,
         };
 
-        private void RegisterEvents()
+        protected virtual void RegisterEvents()
         {
             client.Log += HandleLog;
             client.Ready += HandleReady;
@@ -62,13 +62,13 @@ namespace DiscordAdapter
         #endregion
 
         #region event handlers
-        private Task HandleReady()
+        protected virtual Task HandleReady()
         {
             isInitialized = true;
             return Task.CompletedTask;
         }
 
-        private Task HandleLog(LogMessage log)
+        protected virtual Task HandleLog(LogMessage log)
         {
             logger.Log(MapLogLevel(log.Severity), log.Exception, "[{logSource}]: {logMessage}", log.Source, log.Message);
             return Task.CompletedTask;
@@ -97,6 +97,14 @@ namespace DiscordAdapter
                 return await dm.SendFilesAsync(attachments: attachments, text: message, embed: embed, components: components);
             }
         }
+
+        public virtual Task<bool> CheckMessageReceivedPreconditions(SocketMessage message) => Task.FromResult(true);
+        public virtual Task<bool> CheckButtonClickedPreconditions(SocketMessageComponent button) => Task.FromResult(true);
+        public virtual Task<bool> CheckReactionAddedPreconditions(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction) => Task.FromResult(true);
+        public virtual Task<bool> CheckReactionRemovedPreconditions(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction) => Task.FromResult(true);
+        public virtual Task<bool> CheckMessageDeletedPreconditions(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel) => Task.FromResult(true);
+        public virtual Task<bool> CheckMessageUpdatedPreconditions(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel) => Task.FromResult(true);
+        public virtual Task<bool> CheckUserIsTypingPreconditions(Cacheable<IUser, ulong> user, Cacheable<IMessageChannel, ulong> channel) => Task.FromResult(true);
         #endregion
 
         #region hosted service functions

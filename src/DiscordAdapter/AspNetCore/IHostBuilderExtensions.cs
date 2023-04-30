@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using Microsoft.Bot.Builder;
+﻿using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -92,7 +90,7 @@ namespace DiscordAdapter.AspNetCore
             Func<IServiceProvider, DiscordSocketClient>? socketClientFactory = default)
             where TDiscordBot : class, IDiscordBot
         {
-            builder.ConfigureServices((hostContext, services) => 
+            builder.ConfigureServices((hostContext, services) =>
             {
                 services.Configure<DiscordBotOptions>(
                     hostContext.Configuration.GetSection(DiscordBotOptions.BotOptions));
@@ -108,10 +106,11 @@ namespace DiscordAdapter.AspNetCore
         /// Registers the discord adapter with the default library implementations and settings
         /// </summary>
         /// <param name="builder"></param>
+        /// <param name="config">Adapter options for configuring</param>
         /// <returns></returns>
-        public static IHostBuilder AddDefaultDiscord(this IHostBuilder builder)
+        public static IHostBuilder AddDefaultDiscord(this IHostBuilder builder, DiscordAdapterOptions? config = default)
         {
-            return builder.AddDiscord<DiscordBot>();
+            return builder.AddDiscord<DiscordBot>(config);
         }
 
     }

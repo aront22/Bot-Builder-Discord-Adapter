@@ -95,9 +95,6 @@ namespace DiscordAdapter
         {
             _ = Task.Run(async () =>
             {
-                if (!await DiscordBot.CheckUserIsTypingPrecondtions(user, channel))
-                    return;
-
                 IChannel c = channel.HasValue ? channel.Value : await DiscordBot.Client.GetDMChannelAsync(channel.Id);
                 if (c != null && c is IDMChannel dm)
                 {
@@ -112,6 +109,9 @@ namespace DiscordAdapter
                         if (!hasTyped || 
                             (hasTyped && now.Subtract(typingTime).TotalSeconds >= 3.0))
                         {
+                            if (!await DiscordBot.CheckUserIsTypingPreconditions(user, channel))
+                                return;
+
                             var activity = new Activity
                             {
                                 From = GetChannelAccount(u),
@@ -120,7 +120,7 @@ namespace DiscordAdapter
                                 Conversation = conversation.Conversation
                             };
 
-                            var bot = options.ChatBotFactory(ServiceProvider);
+                            var bot = options.ChatBotFactory(ServiceProvider, activity);
                             await ProcessActivityAsync(new ClaimsIdentity(), activity, bot.OnTurnAsync, default);
 
                             UserLastTypeTimes.AddOrUpdate(u.Id, now, (id, t) => now);
@@ -142,20 +142,22 @@ namespace DiscordAdapter
         {
             _ = Task.Run(async () =>
             {
-                if (!await DiscordBot.CheckMessageUpdatedPrecondtions(before, after, channel))
-                    return;
-
                 if (channel != null && channel is IDMChannel dm)
                 {
                     var oldActivity = MessageCachingService.GetRecievedMessageActivity(before.Id.ToString());
                     if (oldActivity != null && after.Author.Id != DiscordBot.Client.CurrentUser.Id &&
                         ActiveConversations.TryGetValue(dm.Recipient.Id.ToString(), out var conversation))
                     {
+                        if (!await DiscordBot.CheckMessageUpdatedPreconditions(before, after, channel))
+                            return;
+
                         oldActivity.Text = after.Content;
                         oldActivity.Type = ActivityTypes.MessageUpdate;
 
-                        var bot = options.ChatBotFactory(ServiceProvider);
-                        await ProcessActivityAsync(new ClaimsIdentity(), (Activity)oldActivity, bot.OnTurnAsync, default);
+                        var activity = (Activity)oldActivity;
+
+                        var bot = options.ChatBotFactory(ServiceProvider, activity);
+                        await ProcessActivityAsync(new ClaimsIdentity(), activity, bot.OnTurnAsync, default);
                     }
                 }
             });
@@ -172,9 +174,6 @@ namespace DiscordAdapter
         {
             _ = Task.Run(async () =>
             {
-                if (!(await DiscordBot.CheckMessageDeletedPrecondtions(message, channel)))
-                    return;
-
                 IChannel c = channel.HasValue ? channel.Value : await DiscordBot.Client.GetDMChannelAsync(channel.Id);
                 if (c != null && c is IDMChannel dm)
                 {
@@ -182,6 +181,9 @@ namespace DiscordAdapter
                     if (m != null && m.Author.Id != DiscordBot.Client.CurrentUser.Id &&
                         ActiveConversations.TryGetValue(dm.Recipient.Id.ToString(), out var conversation))
                     {
+                        if (!(await DiscordBot.CheckMessageDeletedPreconditions(message, channel)))
+                            return;
+
                         var activity = new Activity
                         {
                             From = GetChannelAccount(m.Author),
@@ -192,7 +194,7 @@ namespace DiscordAdapter
                             Text = m.Content
                         };
 
-                        var bot = options.ChatBotFactory(ServiceProvider);
+                        var bot = options.ChatBotFactory(ServiceProvider, activity);
                         await ProcessActivityAsync(new ClaimsIdentity(), activity, bot.OnTurnAsync, default);
                     }
                 }
@@ -214,14 +216,14 @@ namespace DiscordAdapter
         {
             _ = Task.Run(async () =>
             {
-                if (!(await DiscordBot.CheckReactionRemovedPrecondtions(message, channel, reaction)))
-                    return;
-
                 if (!(reaction.UserId != DiscordBot.Client.CurrentUser.Id &&
                     ActiveConversations.TryGetValue(reaction.UserId.ToString(), out var conversation)))
                 {
                     return;
                 }
+
+                if (!(await DiscordBot.CheckReactionRemovedPreconditions(message, channel, reaction)))
+                    return;
 
                 var user = await DiscordBot.Client.GetUserAsync(reaction.UserId);
                 var activity = new Activity().CreateMessageReactionActivity(
@@ -231,7 +233,7 @@ namespace DiscordAdapter
 
                 activity.SetRemovedReaction(reaction.Emote);
 
-                var bot = options.ChatBotFactory(ServiceProvider);
+                var bot = options.ChatBotFactory(ServiceProvider, activity);
                 await ProcessActivityAsync(new ClaimsIdentity(), activity, bot.OnTurnAsync, default);
             });
             return Task.CompletedTask;
@@ -251,14 +253,14 @@ namespace DiscordAdapter
         {
             _ = Task.Run(async () =>
             {
-                if (!(await DiscordBot.CheckReactionAddedPreconditions(message, channel, reaction)))
-                    return;
-
                 if (!(reaction.UserId != DiscordBot.Client.CurrentUser.Id &&
                     ActiveConversations.TryGetValue(reaction.UserId.ToString(), out var conversation)))
                 {
                     return;
                 }
+
+                if (!(await DiscordBot.CheckReactionAddedPreconditions(message, channel, reaction)))
+                    return;
 
                 var user = await DiscordBot.Client.GetUserAsync(reaction.UserId);
                 var activity = new Activity().CreateMessageReactionActivity(
@@ -268,7 +270,7 @@ namespace DiscordAdapter
 
                 activity.SetAddedReaction(reaction.Emote);
 
-                var bot = options.ChatBotFactory(ServiceProvider);
+                var bot = options.ChatBotFactory(ServiceProvider, activity);
                 await ProcessActivityAsync(new ClaimsIdentity(), activity, bot.OnTurnAsync, default);
             });
             return Task.CompletedTask;
@@ -285,12 +287,12 @@ namespace DiscordAdapter
             // Creating and starting a new Task will prevent any blocking on the gateway thread
             _ = Task.Run(async () =>
             {
-                if (!(await DiscordBot.CheckMessageReceivedPreconditions(message)))
-                    return;
-
                 if (!message.Author.IsBot && message.Channel is IDMChannel dm)
                 {
-                    var bot = options.ChatBotFactory(ServiceProvider);
+                    if (!(await DiscordBot.CheckMessageReceivedPreconditions(message)))
+                        return;
+
+                    var bot = options.ChatBotFactory(ServiceProvider, null);
                     await CreateOrContinueDiscordConversationAsync(dm, bot.OnTurnAsync, message);
                 }
             });
@@ -306,14 +308,13 @@ namespace DiscordAdapter
         {
             _ = Task.Run(async () =>
             {
-                if (!(await DiscordBot.CheckButtonClickedPreconditions(button)))
-                    return;
-
                 if (button.Channel is IDMChannel dm)
                 {
-                    var message = GetMessageToBot(dm, button.Message);
-                    message.Text = button.Data.CustomId;
-                    var bot = options.ChatBotFactory(ServiceProvider);
+                    if (!(await DiscordBot.CheckButtonClickedPreconditions(button)))
+                        return;
+
+                    var activity = GetMessageToBot(dm, button.Message);
+                    activity.Text = button.Data.CustomId;
                     await button.UpdateAsync(m =>
                     {
                         var cb = new ComponentBuilder();
@@ -331,7 +332,8 @@ namespace DiscordAdapter
                         }
                         m.Components = cb.Build();
                     });
-                    await ProcessActivityAsync(new ClaimsIdentity(), message, bot.OnTurnAsync, default);
+                    var bot = options.ChatBotFactory(ServiceProvider, activity);
+                    await ProcessActivityAsync(new ClaimsIdentity(), activity, bot.OnTurnAsync, default);
                 }
             });
             return Task.CompletedTask;
@@ -621,7 +623,7 @@ namespace DiscordAdapter
                 MessageCachingService.AddRecievedMessageActivity(messageActivity);
                 await ProcessActivityAsync(new ClaimsIdentity(), messageActivity, callbackHandler, default);
             }
-            else
+            else if (options.StartConversationOnMessageReceived)
             {
                 await StartDiscordConversationAsync(dm.Recipient, callbackHandler);
             }
@@ -638,6 +640,11 @@ namespace DiscordAdapter
             IUser user,
             BotCallbackHandler callbackHandler)
         {
+            if (!DiscordBot.IsConnected)
+            {
+                throw new ApplicationException("Discord bot is not connected!");
+            }
+
             var conversationParameters = await GetConversationParametersAsync(user);
 
             await CreateConversationAsync(
@@ -669,7 +676,6 @@ namespace DiscordAdapter
         /// Creates conversation starting paramerters with the given user information
         /// </summary>
         /// <param name="user">User starting the conversation</param>
-        /// <param name="initialMessage">Optional initial message for the bot</param>
         /// <returns>ConversationParameters containing basic information</returns>
         private async Task<ConversationParameters> GetConversationParametersAsync(IUser user)
         {

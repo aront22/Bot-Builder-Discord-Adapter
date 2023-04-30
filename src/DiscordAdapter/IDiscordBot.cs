@@ -33,23 +33,23 @@ namespace DiscordAdapter
             IEnumerable<FileAttachment>? attachments = null);
 
         /// <summary>
-        /// Check custom precondtions before execution of the MessageReceived DiscordAdapter code.
+        /// Check custom preconditions before execution of the MessageReceived DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="message">The message that was recieved</param>
         /// <returns></returns>
-        public Task<bool> CheckMessageReceivedPreconditions(SocketMessage message) => Task.FromResult(true);
+        public Task<bool> CheckMessageReceivedPreconditions(SocketMessage message);
 
         /// <summary>
-        /// Check custom precondtions before execution of the ButtonClicked DiscordAdapter code.
+        /// Check custom preconditions before execution of the ButtonClicked DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="button">The button that was pressed</param>
         /// <returns></returns>
-        public Task<bool> CheckButtonClickedPreconditions(SocketMessageComponent button) => Task.FromResult(true);
+        public Task<bool> CheckButtonClickedPreconditions(SocketMessageComponent button);
 
         /// <summary>
-        /// Check custom precondtions before execution of the ReactionAdded DiscordAdapter code.
+        /// Check custom preconditions before execution of the ReactionAdded DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="message">The message that the reaction was added to</param>
@@ -59,54 +59,54 @@ namespace DiscordAdapter
         public Task<bool> CheckReactionAddedPreconditions(
             Cacheable<IUserMessage, ulong> message,
             Cacheable<IMessageChannel, ulong> channel,
-            SocketReaction reaction) => Task.FromResult(true);
+            SocketReaction reaction);
 
         /// <summary>
-        /// Check custom precondtions before execution of the ReactionRemoved DiscordAdapter code.
+        /// Check custom preconditions before execution of the ReactionRemoved DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="message">The message that the reaction was removed from</param>
         /// <param name="channel">The channel where the message was sent</param>
         /// <param name="reaction">The reaction that was removed</param>
         /// <returns></returns>
-        public Task<bool> CheckReactionRemovedPrecondtions(
+        public Task<bool> CheckReactionRemovedPreconditions(
             Cacheable<IUserMessage, ulong> message,
             Cacheable<IMessageChannel, ulong> channel,
-            SocketReaction reaction) => Task.FromResult(true);
+            SocketReaction reaction);
 
         /// <summary>
-        /// Check custom precondtions before execution of the MessageDeleted DiscordAdapter code.
+        /// Check custom preconditions before execution of the MessageDeleted DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="message">The message that was deleted.</param>
         /// <param name="channel">Channel where the message was deleted</param>
         /// <returns></returns>
-        public Task<bool> CheckMessageDeletedPrecondtions(
+        public Task<bool> CheckMessageDeletedPreconditions(
             Cacheable<IMessage, ulong> message,
-            Cacheable<IMessageChannel, ulong> channel) => Task.FromResult(true);
+            Cacheable<IMessageChannel, ulong> channel);
 
         /// <summary>
-        /// Check custom precondtions before execution of the MessageUpdated DiscordAdapter code.
+        /// Check custom preconditions before execution of the MessageUpdated DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="before">Message state before the update</param>
         /// <param name="after">Message state after the update</param>
         /// <param name="channel">Channel where the message was originally sent</param>
         /// <returns></returns>
-        public Task<bool> CheckMessageUpdatedPrecondtions(
+        public Task<bool> CheckMessageUpdatedPreconditions(
             Cacheable<IMessage, ulong> before,
             SocketMessage after,
-            ISocketMessageChannel channel) => Task.FromResult(true);
+            ISocketMessageChannel channel);
 
         /// <summary>
-        /// Check custom precondtions before execution of the UserIsTyping DiscordAdapter code.
+        /// Check custom preconditions before execution of the UserIsTyping DiscordAdapter code.
         /// Return false to prevent the DiscordAdapter code from running.
         /// </summary>
         /// <param name="user">User who started typing</param>
         /// <param name="channel">Channel where the user is typing</param>
         /// <returns></returns>
-        public Task<bool> CheckUserIsTypingPrecondtions(
+        public Task<bool> CheckUserIsTypingPreconditions(
             Cacheable<IUser, ulong> user,
-            Cacheable<IMessageChannel, ulong> channel) => Task.FromResult(true);
+            Cacheable<IMessageChannel, ulong> channel);
     }
 }
