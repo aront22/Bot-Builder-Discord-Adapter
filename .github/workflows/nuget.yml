@@ -16,7 +16,7 @@ jobs:
         runs-on: ubuntu-20.04
         steps:
         - name: Exit if not on master branch
-          if: endsWith(github.ref, 'main') == false
+          if: endsWith(github.ref, 'nuget') == false
           run: exit -1
 
         - name: 'Checkout'
